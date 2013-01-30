@@ -13,8 +13,10 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
 
   function syntax_plugin_pubchem(){
     $this->name = pubchem;
-    @require_once(DOKU_PLUGIN.$this->name.'/classes/cache.php');
-    @require_once(DOKU_PLUGIN.$this->name.'/classes/sciencedb.php');
+    if (!class_exists('plugin_cache'))
+        @require_once(DOKU_PLUGIN.'pubmed/classes/cache.php');
+    if (!class_exists('rcsb')||!class_exists('ncbi')||!class_exists('xml'))
+        @require_once(DOKU_PLUGIN.'pubmed/classes/sciencedb.php');
     $this->ncbi        = new ncbi();
     $this->imgCache    = new plugin_cache($this->name,'',"png");
     $this->xmlCache    = new plugin_cache($this->name,'',"xml.gz");
