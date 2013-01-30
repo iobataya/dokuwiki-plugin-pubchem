@@ -1,0 +1,7 @@
+base   pubchem
+author Ikuo Obataya
+email  i.obataya[at]gmail_com
+date   2013-01-29
+name   Pubchem plugin
+desc   Creates PubChem image and links
+url    http://www.dokuwiki.org/plugin:pubchem

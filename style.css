@@ -1,0 +1,13 @@
+div.dokuwiki div.pubchem_imgbox{
+  padding-bottom:18px;
+  background-position:bottom left;
+  background-image:url('img/pubchem_icon.png');
+  background-repeat:no-repeat;
+}
+div.dokuwiki div.pubchem_link{
+  background-image:url('img/pubchem_icon.png');
+  background-repeat:no-repeat;
+  width:70px;
+  height:18px;
+}
+
