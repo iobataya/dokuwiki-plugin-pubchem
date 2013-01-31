@@ -42,94 +42,93 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
   * Render PubChem image and link
   */
   function render($mode, &$renderer, $data){
-      if ($mode!='xhtml')
-      return false;
+    if ($mode!='xhtml') return false;
+    global $pubchem_cache;
+    if(!is_array($pubchem_cache)) $pubchem_cache=array();
 
     list($state, $match) = $data;
     list($cmd,$cid) = $match;
     $cmd = strtolower($cmd);
-
-    if ($cmd=="small" || $cmd=="large"){
-      if (!is_numeric($cid)){
-        $renderer->doc .= sprintf($this->getLang('pubchem_invalid_cid'),$cid);
-        return false;
-      }
-      global $conf;
-      $mode = ($cmd=="small")?"s":"l";
-      $id = $cid.$mode;
-
-      $filename = $this->imgCache->GetMediaPath($id);
-      if(is_readable($filename)){
-        $renderer->doc .= $this->getImageHtml($cid,$mode);
-      }else{
-        $url = sprintf($this->downloadURL,$mode,$cid);
-        io_download($url,$filename);
-        $renderer->doc .= $this->getImageHtml($cid,$mode);
-      }
-      return true;
-    }else if($cmd=="link"||$cmd=="summaryxml"||$cmd=="iupac"||$cmd=="smiles"||
-             $cmd=="formula"||$cmd=="template"){
-      if (!is_numeric($cid)){
-        $renderer->doc .= sprintf($this->getLang('pubchem_invalid_cid'),$cid);
-        return false;
-      }
-      switch($cmd){
-        case 'link':
-          $renderer->doc .= '<a target=_blank ';
-          $renderer->doc .= 'href="'.$this->summaryURL.$cid.'" title="Go to PubChem site">';
-          $renderer->doc .= '<div class="pubchem_link">&nbsp;</div></a>'.NL;
-          return true;
-
-        case 'summaryxml':
-          $xml = $this->getPubchemXml($cid);
-          if ($xml===false){return true;}
-          $renderer->doc .= '<pre>'.htmlspecialchars($xml).'</pre>';
-          return true;
-
-        case 'iupac':
-          if (empty($this->chemProperty[$cid]['iupac'])){
-            $this->getProperties($cid);
-          }
-          $renderer->doc .= $this->chemProperty[$cid]['iupac'];
-          return true;
-        case 'formula':
-          if (empty($this->chemProperty[$cid]['iupac'])){
-            $this->getProperties($cid);
-          }
-          $renderer->doc.=$this->chemProperty[$cid]['formula'];
-          return true;
-        case 'template':
-          if (empty($this->chemProperty[$cid]['iupac'])){
-            $this->getProperties($cid);
-          }
-          $renderer->doc .= '^Name|XXX(('.$this->chemProperty[$cid]['iupac'].'))|<br/>';
-          $renderer->doc .= '^Molecular Formula|&lt;chem&gt;'.$this->chemProperty[$cid]['formula'].'&lt;/chem&gt;|<br/>';
-          $renderer->doc .= '^Molecular Weight|'.$this->chemProperty[$cid]['weight'].'|<br/>';
-          $renderer->doc .= '^LogP|'.$this->chemProperty[$cid]['logp'].'|<br/>';
-          return true;
-      }
-    }else{
-      switch($cmd){
-        case 'searchbox':
-          $renderer->doc .= file_get_contents(DOKU_PLUGIN.$this->name.'/pubchem_search_box.htm').NL;
-          return true;
-
-        case 'clear':
-          $this->xmlCache->ClearCache();
-          $renderer->doc .= 'Cleared.';
-          return true;
-
-        case 'remove_dir':
-          $this->xmlCache->RemoveDir();
-          $renderer->doc .= 'Directory cleared.';
-          return true;
-
-        default:
-          // Command was not found..
-          $renderer->doc.='<div class="plugin_cmd">'.sprintf($this->getLang('plugin_cmd_not_found'),$cmd).'</div>';
-          return true;
-      }
+    if(strpos($cid,'|')!==false){
+      list($cid,$title)=explode('|',$cid);
     }
+    // Commands without CID
+    switch($cmd){
+        case 'searchbox':
+            $renderer->doc .= file_get_contents(DOKU_PLUGIN.$this->name.'/pubchem_search_box.htm').NL;
+            return true;
+        case 'clear':
+            $this->xmlCache->ClearCache();
+            $renderer->doc .= 'Cleared.';
+            return true;
+        case 'remove_dir':
+            $this->xmlCache->RemoveDir();
+            $renderer->doc .= 'Directory cleared.';
+            return true;
+        default:
+            if(!$cid){
+              $renderer->doc.='<div class="plugin_cmd">'.sprintf($this->getLang('plugin_cmd_not_found'),$cmd).'</div>';
+              return true;
+            }
+     }
+    // Commands with CID
+    if (!is_numeric($cid)){
+        $renderer->doc .= sprintf($this->getLang('pubchem_invalid_cid'),$cid);
+        return false;
+    }
+    if(!is_array($pubchem_cache[$cid])) $this->getProperties($cid);
+    switch($cmd){
+        case 'link':
+            $renderer->doc .= '<a target=_blank ';
+            $renderer->doc .= 'href="'.$this->summaryURL.$cid.'" title="Go to PubChem site" class="pubchem_link">'.$cid.'</a>'.NL;
+            return true;
+        case 'summaryxml':
+            $xml = $this->getPubchemXml($cid);
+            if ($xml===false){return true;}
+            $renderer->doc .= '<pre>'.htmlspecialchars($xml).'</pre>';
+            return true;
+        case 'iupac':
+            $renderer->doc.= $pubchem_cache[$cid]['iupac'];
+            return true;
+        case 'formula':
+            $renderer->doc.=$pubchem_cache[$cid]['formula'];
+            return true;
+        case 'mw':
+            $renderer->doc.=$pubchem_cache[$cid]['weight'];
+            return true;
+        case 'xlogp':
+            $renderer->doc.=$pubehcm_cache[$cid]['xlogp'];
+            return true;
+        default:
+            $mode = $cmd[0]; // s or l
+            $id = $cid.$mode;
+            $filename = $this->imgCache->GetMediaPath($id);
+            if(!is_readable($filename)){
+                $url = sprintf($this->downloadURL,$mode,$cid);
+                io_download($url,$filename);
+            }
+            if(strpos($cmd,'template')!==false){
+                if (empty($pubchem_cache[$cid]['iupac'])){
+                    $this->getProperties($cid);
+                }
+                $renderer->doc.='<div class="left" style="padding:10px;">';
+                $renderer->table_open(2);
+                $this->_name_row($renderer,$cid,$pubchem_cache[$cid]['iupac'],$title);
+                $this->_row($renderer,$this->getLang('mol_formula'),$pubchem_cache[$cid]['formula']);
+                $this->_row($renderer,$this->getLang('mol_weight'),$pubchem_cache[$cid]['weight']);
+                $this->_row($renderer,'LogP',$pubchem_cache[$cid]['xlogp']);
+                $renderer->table_close();
+                $renderer->doc.='</div><div class="left">';
+                $renderer->doc .= $this->getImageHtml($cid,$mode);
+                $renderer->doc.='</div><div class="clearfix"></div>'.DOKU_LF;
+            }else{
+                $renderer->doc .= $this->getImageHtml($cid,$mode);
+            }
+            return true;
+    }
+    // Command was not found..
+    $renderer->doc.='<div class="plugin_cmd">'.sprintf($this->getLang('plugin_cmd_not_found'),$cmd).'</div>';
+    return true;
   }
 
 /**
@@ -142,6 +141,12 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
         $tag .= 'title="CID:'.$cid.'  Click to PubChem page"/></a></div>';
         return $tag;
   }
+
+ /**
+  * Get properties from XML data
+  * @param string $cid
+  * @return boolean
+  */
   function getProperties($cid){
     $xml = $this->getPubchemXml($cid);
     if ($xml===false){return true;}
@@ -164,15 +169,15 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
               break;
             case "IUPAC Name":
               if ($info_name2=="Preferred"||$info_name2=="Allowed"){
+                if(strlen($info_value)>50){ $info_value = str_replace("-","- ",$info_value);}
                 $this->chemProperty[$cid]['iupac'] = $info_value;
               }
-
               break;
             case "Molecular Weight":
               $this->chemProperty[$cid]['weight'] = $info_value;
               break;
             case "Log P":
-              $this->chemProperty[$cid]['logp'] = $info_value;
+              $this->chemProperty[$cid]['xlogp'] = $info_value;
               break;
             case "SMILES":
               $this->chemProperty[$cid]['smiles'] = $info_value;
@@ -181,6 +186,8 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
         }
       }
     }
+    global $pubchem_cache;
+    $pubchem_cache[$cid] = $this->chemProperty[$cid];
   }
  /**
   * Get PubChem XML
@@ -206,5 +213,46 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
     $replace = array("<sup>\${1}</sup>","\${1}<sub>\${2}</sub>");
     return preg_replace($pattern,$replace,$raw);
   }
+  /**
+   * table name row for a template
+   * @param Doku_Renderer $renderer
+   * @param string $cid
+   * @param string $iupac
+   * @param string $title
+   */
+  function _name_row(&$renderer,$cid,$iupac='',$title=''){
+      $renderer->tablerow_open();
+      $renderer->tableheader_open();
+      $renderer->doc.=($title!='')?$this->getLang('mol_name'):'CID';
+      $renderer->tableheader_close();
+      $renderer->tablecell_open();
+      $renderer->doc.=($title!='')?$title:$cid;
+      if($iupac){
+          $renderer->footnote_open();
+          $renderer->doc.=$iupac;
+          $renderer->footnote_close();
+      }
+      $renderer->tablecell_close();
+      $renderer->tablerow_close();
+  }
+
+  /**
+   * Render table row for a template
+   * @param Doku_Renderer $renderer
+   * @param string $head
+   * @param string $cell
+   */
+  function _row(&$renderer,$head,$cell){
+      if(empty($cell))return;
+      $renderer->tablerow_open();
+      $renderer->tableheader_open();
+      $renderer->doc.=$head;
+      $renderer->tableheader_close();
+      $renderer->tablecell_open();
+      $renderer->doc.=$cell;
+      $renderer->tablecell_close();
+      $renderer->tablerow_close();
+  }
+
 }
 ?>
