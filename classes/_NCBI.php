@@ -2,8 +2,8 @@
 /*
 description : Access to NCBI using eSummary and eSearch
 author      : Ikuo Obataya
-email       : ikuo_obataya@symplus.co.jp
-lastupdate  : 2008-03-22
+email       : i.obataya[at]gmail_com
+lastupdate  : 2013-07-07
 license     : GPL 2 (http://www.gnu.org/licenses/gpl.html)
 */
 if(!defined('DOKU_INC')) die();
@@ -17,7 +17,7 @@ class ncbi{
     $this->HttpClient  = new DokuHTTPClient();
     $this->eSummaryURL = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=%s&retmode=xml&id=%s';
     $this->eSearchURL  = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=%s&term=%s';
-    $this->pubchemURL  = 'http://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?cid=%s&disopt=DisplayXML';   
+    $this->pubchemURL  = 'http://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?cid=%s&disopt=DisplayXML';
     $this->pubmedURL   = 'http://www.ncbi.nlm.nih.gov/pubmed/%s';
   }
   /*
@@ -39,20 +39,8 @@ class ncbi{
     return $result;
   }
   /*
-   * Convert PDB ID to Structure ID
+   * Retrieve PubChem XML
    */
-  function PDBtoStructureID($pdbAcc){
-    $xml = $this->SearchXml('structure',$pdbAcc);
-    $ids = $this->GetSearchItems("Id",$xml);
-    for ($i=0;$i<count($ids);$i++){
-      $tmpXml   = $this->SummaryXML('structure',$ids[$i]);
-      $tmpPdbId = $this->GetSummaryItem("PdbAcc",$tmpXml);
-      if (strtolower($pdbAcc)==strtolower($tmpPdbId)){
-        return $ids[$i];
-      }
-    }
-    return 0;
-  }
   function GetPubchemXml($cid){
     $xml = $this->HttpClient->get(sprintf($this->pubchemURL,$cid));
     if (preg_match("/error/i",$xml)){return NULL;}
@@ -62,26 +50,26 @@ class ncbi{
   /*
    * Handle XML elements
    */
-  
+
   function GetSummaryItem($item,&$xml){
     preg_match('/"'.$item.'"[^>]*>([^<]+)/',$xml,$m);
     return $m[1];
   }
-  
+
   function GetSummaryItems($item,&$xml){
     preg_match_all('/"'.$item.'"[^>]*>([^<]+)/',$xml,$m);
     return $m[1];
   }
-  
+
   function GetSearchItem($item,&$xml){
      preg_match("/<".$item.">([^<]+?)</",$xml,$m);
-     return $m[1];    
+     return $m[1];
   }
-  
+
   function GetSearchItems($item,&$xml){
      preg_match_all("/<".$item.">([^<]+?)</",$xml,$m);
      return $m[1];
   }
-  
+
 }
 ?>
