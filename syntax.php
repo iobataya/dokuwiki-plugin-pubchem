@@ -33,7 +33,7 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
   }
 
   // Handling lexer
-  function handle($match, $state, $pos, &$handler){
+  function handle($match, $state, $pos, Doku_Handler $handler){
     $match = substr($match,10,-2);
     return array($state,explode(':',$match));
   }
@@ -41,7 +41,7 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
 /**
   * Render PubChem image and link
   */
-  function render($mode, &$renderer, $data){
+  function render($mode, Doku_Renderer $renderer, $data){
     if ($mode!='xhtml') return false;
     global $pubchem_cache;
     if(!is_array($pubchem_cache)) $pubchem_cache=array();
