@@ -15,10 +15,10 @@ class ncbi{
   function ncbi()
   {
     $this->HttpClient  = new DokuHTTPClient();
-    $this->eSummaryURL = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=%s&retmode=xml&id=%s';
-    $this->eSearchURL  = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=%s&term=%s';
-    $this->pubchemURL  = 'http://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?cid=%s&disopt=DisplayXML';
-    $this->pubmedURL   = 'http://www.ncbi.nlm.nih.gov/pubmed/%s';
+    $this->eSummaryURL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=%s&retmode=xml&id=%s';
+    $this->eSearchURL  = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=%s&term=%s';
+    $this->pubchemURL  = 'https://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?cid=%s&disopt=DisplayXML';
+    $this->pubmedURL   = 'https://www.ncbi.nlm.nih.gov/pubmed/%s';
   }
   /*
    * Retrieve Summary XML
