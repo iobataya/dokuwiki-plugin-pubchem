@@ -12,7 +12,7 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
   var $chemProperty = array();
 
   function syntax_plugin_pubchem(){
-    $this->name = pubchem;
+    $this->name = 'pubchem';
     if (!class_exists('plugin_cache'))
         @require_once(DOKU_PLUGIN.$this->name.'/classes/cache.php');
     if (!class_exists('rcsb')||!class_exists('ncbi')||!class_exists('xml'))
