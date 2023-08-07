@@ -3,7 +3,7 @@
 description : Access to NCBI using eSummary and eSearch
 author      : Ikuo Obataya
 email       : i.obataya[at]gmail_com
-lastupdate  : 2013-07-07
+lastupdate  : 2023-08-07
 license     : GPL 2 (http://www.gnu.org/licenses/gpl.html)
 */
 if(!defined('DOKU_INC')) die();
@@ -12,7 +12,7 @@ class ncbi{
   var $eSummaryURL = '';
   var $eSearchURL  = '';
   var $pubmedURL   = '';
-  function ncbi()
+  function __construct()
   {
     $this->HttpClient  = new DokuHTTPClient();
     $this->eSummaryURL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=%s&retmode=xml&id=%s';
