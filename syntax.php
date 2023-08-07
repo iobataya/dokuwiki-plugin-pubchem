@@ -11,7 +11,7 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
   var $downloadURL='';
   var $chemProperty = array();
 
-  function syntax_plugin_pubchem(){
+  function __construct(){
     $this->name = 'pubchem';
     if (!class_exists('plugin_cache'))
         @require_once(DOKU_PLUGIN.$this->name.'/classes/cache.php');
@@ -20,9 +20,10 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
     $this->ncbi        = new ncbi();
     $this->imgCache    = new plugin_cache($this->name,'',"png");
     $this->xmlCache    = new plugin_cache($this->name,'',"xml.gz");
+    $this->propCache   = new plugin_cache($this->name,'prop','json');
 
-    $this->summaryURL  = 'http://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?cid=';
-    $this->downloadURL = 'http://pubchem.ncbi.nlm.nih.gov/image/imgsrv.fcgi?t=%s&cid=%s';
+    $this->summaryURL  = 'https://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?cid=';
+    $this->downloadURL = 'https://pubchem.ncbi.nlm.nih.gov/image/imgsrv.fcgi?t=%s&cid=%s';
   }
   function getType(){ return 'substition'; }
   function getSort(){ return 159; }
@@ -76,7 +77,15 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
         $renderer->doc .= sprintf($this->getLang('pubchem_invalid_cid'),$cid);
         return false;
     }
-    if(!is_array($pubchem_cache[$cid])) $this->getProperties($cid);
+    if ($this->propCache->Exists($cid)){
+      $ext_props = json_decode($this->propCache->GetMediaText($cid),true);
+    }else{
+      $ext_props = $this->getProperties($cid);
+    }
+    $iupac   = array_key_exists('iupac',  $ext_props) ? $ext_props['iupac']:'';
+    $formula = array_key_exists('formula',$ext_props) ? $ext_props['formula']:'';
+    $mw      = array_key_exists('mw',     $ext_props) ? $ext_props['mw']:'';
+    $xlogp   = array_key_exists('xlogp',  $ext_props) ? $ext_props['xlogp']:'';
     switch($cmd){
         case 'link':
             $renderer->doc .= '<a target=_blank ';
@@ -88,16 +97,16 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
             $renderer->doc .= '<pre>'.htmlspecialchars($xml).'</pre>';
             return true;
         case 'iupac':
-            $renderer->doc.= $pubchem_cache[$cid]['iupac'];
+            $renderer->doc.= $iupac;
             return true;
         case 'formula':
-            $renderer->doc.=$pubchem_cache[$cid]['formula'];
+            $renderer->doc.= $formula;
             return true;
         case 'mw':
-            $renderer->doc.=$pubchem_cache[$cid]['weight'];
+            $renderer->doc.= $mw;
             return true;
         case 'xlogp':
-            $renderer->doc.=$pubehcm_cache[$cid]['xlogp'];
+            $renderer->doc.= $xlogp;
             return true;
         default:
             $mode = $cmd[0]; // s or l
@@ -113,10 +122,10 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
                 }
                 $renderer->doc.='<div class="left" style="padding:10px;">';
                 $renderer->table_open(2);
-                $this->_name_row($renderer,$cid,$pubchem_cache[$cid]['iupac'],$title);
-                $this->_row($renderer,$this->getLang('mol_formula'),$pubchem_cache[$cid]['formula']);
-                $this->_row($renderer,$this->getLang('mol_weight'),$pubchem_cache[$cid]['weight']);
-                $this->_row($renderer,'LogP',$pubchem_cache[$cid]['xlogp']);
+                $this->_name_row($renderer,$cid,$iupac,$title);
+                $this->_row($renderer,$this->getLang('mol_formula'),$formula);
+                $this->_row($renderer,$this->getLang('mol_weight'), $mw);
+                $this->_row($renderer,'LogP',$xlogp);
                 $renderer->table_close();
                 $renderer->doc.='</div><div class="left">';
                 $renderer->doc .= $this->getImageHtml($cid,$mode);
@@ -135,7 +144,7 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
   * Get PubChem image description
   */
   function getImageHtml($cid,$mode){
-        $tag .= '<div class="pubchem_imgbox"><a href="'.$this->summaryURL.$cid.'" target=_blank>';
+        $tag = '<div class="pubchem_imgbox"><a href="'.$this->summaryURL.$cid.'" target=_blank>';
         $tag .= '<img src = "'.$this->imgCache->GetMediaLink($cid.$mode).'" class="media" ';
         $tag .= 'alt="PubChem image '.$cid.'" ';
         $tag .= 'title="CID:'.$cid.'  Click to PubChem page"/></a></div>';
@@ -149,10 +158,13 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
   */
   function getProperties($cid){
     $xml = $this->getPubchemXml($cid);
-    if ($xml===false){return true;}
+    if ($xml===false){
+      return false;
+    }
     $x = new Xml;
     $XmlClass = $x->GetXmlObject($xml);
-    $xmls = $XmlClass[0]->next;
+    $xmls = $XmlClass[0]->next[0]->next;
+    $ext_props = array();
     for($i=0;$i<count($xmls);$i++){
       if ($xmls[$i]->tag=="PC-Compound_props"){
         $props = $xmls[$i]->next;
@@ -165,29 +177,30 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
 
           switch($info_name1){
             case "Molecular Formula":
-              $this->chemProperty[$cid]['formula']=$this->getChemFormat($info_value);
+              $ext_props['formula'] = $this->getChemFormat($info_value);
               break;
             case "IUPAC Name":
               if ($info_name2=="Preferred"||$info_name2=="Allowed"){
                 if(strlen($info_value)>50){ $info_value = str_replace("-","- ",$info_value);}
-                $this->chemProperty[$cid]['iupac'] = $info_value;
+                $ext_props['iupac'] = $info_value;
               }
               break;
             case "Molecular Weight":
-              $this->chemProperty[$cid]['weight'] = $info_value;
+              $ext_props['mw'] = $info_value;
               break;
             case "Log P":
-              $this->chemProperty[$cid]['xlogp'] = $info_value;
+              $ext_props['xlogp'] = $info_value;
               break;
             case "SMILES":
-              $this->chemProperty[$cid]['smiles'] = $info_value;
+              $ext_props['smiles'] = $info_value;
               break;
           }
         }
       }
     }
-    global $pubchem_cache;
-    $pubchem_cache[$cid] = $this->chemProperty[$cid];
+    // save extracted properties
+    $this->propCache->PutMediaText($cid,json_encode($ext_props));
+    return $ext_props;
   }
  /**
   * Get PubChem XML
@@ -253,6 +266,5 @@ class syntax_plugin_pubchem extends DokuWiki_Syntax_Plugin {
       $renderer->tablecell_close();
       $renderer->tablerow_close();
   }
-
 }
 ?>
