@@ -8,7 +8,7 @@ class plugin_cache{
   var $prefix     ='';
   var $extension  ='';
   var $tmpdir     ='';
-  function plugin_cache($_name='plugin_cache',$_prefix='noname',$_ext='txt'){
+  function __construct($_name='plugin_cache',$_prefix='noname',$_ext='txt'){
     global $conf;
     $this->namespace = strtolower($_name);
     $this->prefix    = strtolower($_prefix);
@@ -208,5 +208,4 @@ class plugin_cache{
     @touch($path);
     return $a;
   }
-
 }
