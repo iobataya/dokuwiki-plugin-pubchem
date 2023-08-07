@@ -2,8 +2,8 @@
 /*
 description : RCSB utility to access RCSB PDB
 author      : Ikuo Obataya
-email       : ikuo_obataya@symplus.co.jp
-lastupdate  : 2008-03-22
+email       : i.obataya[at]gmail.com
+lastupdate  : 2023-08-07
 license     : GPL 2 (http://www.gnu.org/licenses/gpl.html)
 */
 if(!defined('DOKU_INC')) die();
@@ -12,12 +12,12 @@ class rcsb{
   var $ImgURL;
   var $LinkURL;
   var $LinkFormat;
-  function rcsb()
+  function __construct()
   {
     $this->HttpClient = new DokuHTTPClient();
-    $this->ImgURL     = 'http://www.rcsb.org/pdb/images/%s_bio_r_500.jpg';
-    $this->LinkURL    = 'http://www.rcsb.org/pdb/explore.do?structureId=%s';
-    $this->LinkFormat = '<a href="http://www.rcsb.org/pdb/explore.do?structureId=%s"><span class="%s">%s</span></a>';
+    $this->ImgURL     = 'https://www.rcsb.org/pdb/images/%s_bio_r_500.jpg';
+    $this->LinkURL    = 'https://www.rcsb.org/pdb/explore.do?structureId=%s';
+    $this->LinkFormat = '<a href="https://www.rcsb.org/pdb/explore.do?structureId=%s"><span class="%s">%s</span></a>';
   }
   /*
    * Download protein image
@@ -48,11 +48,10 @@ class rcsb{
     $class  = urlencode($class);
     return sprintf($this->LinkFormat,$pdbid,$class,strtoupper($pdbid));
   }
-  
+
   function PDBformat($pdbid){
     $pdbid=strtolower(urlencode($pdbid));
     if (strlen($pdbid)!=4) return false;
     return $pdbid;
   }
 }
-  
