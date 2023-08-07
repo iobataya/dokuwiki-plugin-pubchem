@@ -3,7 +3,7 @@
 description : Simple Xml object class
 author      : Ikuo Obataya
 email       : i.obataya[at]gmail.com
-lastupdate  : 2013-01-29
+lastupdate  : 2023-08-07
 license     : GPL 2 (http://www.gnu.org/licenses/gpl.html)
 */
 class Xml
@@ -22,19 +22,21 @@ class Xml
     $XmlClass = array();
     $LastObj = array();
     $NowObj = &$XmlClass;
-
+    $TG = "tag";
+    $VL = "value";
+    $AT = "attributes";
     foreach($Xml_Values as $Xml_Key => $Xml_Value){
       $Index = count($NowObj);
       if($Xml_Value["type"] == "complete"){
         $NowObj[$Index] = new Xml;
-        $NowObj[$Index]->tag = $Xml_Value["tag"];
-        $NowObj[$Index]->value = $Xml_Value["value"];
-        $NowObj[$Index]->attributes = $Xml_Value["attributes"];
+        $NowObj[$Index]->tag = array_key_exists($TG,$Xml_Value)?$Xml_Value[$TG]:"";
+        $NowObj[$Index]->value = array_key_exists($VL,$Xml_Value)?$Xml_Value[$VL]:"";
+        $NowObj[$Index]->attributes = array_key_exists($AT,$Xml_Value)?$Xml_Value[$AT]:"";
       }elseif($Xml_Value["type"] == "open"){
         $NowObj[$Index] = new Xml;
-        $NowObj[$Index]->tag = $Xml_Value["tag"];
-        $NowObj[$Index]->value = $Xml_Value["value"];
-        $NowObj[$Index]->attributes = $Xml_Value["attributes"];
+        $NowObj[$Index]->tag = array_key_exists($TG,$Xml_Value)?$Xml_Value[$TG]:"";
+        $NowObj[$Index]->value = array_key_exists($VL,$Xml_Value)?$Xml_Value[$VL]:"";
+        $NowObj[$Index]->attributes = array_key_exists($AT,$Xml_Value)?$Xml_Value[$AT]:"";
         $NowObj[$Index]->next = array();
         $LastObj[count($LastObj)] = &$NowObj;
         $NowObj = &$NowObj[$Index]->next;
@@ -46,4 +48,3 @@ class Xml
     return $XmlClass;
   }
 }
-
